@@ -397,7 +397,7 @@
                     });
 
                     if (feature) {
-                        const name = feature.get('name') || 'No name';
+                        const name = feature.get('name') || '';
                         const coordinate = evt.coordinate;
 
                         showPopup(coordinate, `<strong>${name}</strong>`);
