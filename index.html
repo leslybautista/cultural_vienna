@@ -408,7 +408,7 @@
 
 
                 console.log('Map created successfully.');
-                updateStatus('✅ Map loaded with GeoJSON layers.', 'success');
+                updateStatus('✅ Click in the map for buffer analysis.', 'success');
 
                 setupEventListeners();
 
@@ -459,7 +459,7 @@
                 clickedPoint = evt.coordinate;
                 const lonLat = ol.proj.toLonLat(clickedPoint);
 
-                updateStatus('🔄 Analyzing...', 'info');
+                updateStatus('🔄 Success', 'info');
                 createBuffer(clickedPoint);
                 analyzeBuffer(lonLat);
             });
