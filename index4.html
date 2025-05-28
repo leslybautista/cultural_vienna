@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cultural Places - Vienna</title>
+
+    <!-- OpenLayers CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v8.2.0/ol.css">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: white;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background: #e6f3ff;
+        }
+
+        .panel {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .panel h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .legend {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .legend div {
+            margin: 8px 0;
+        }
+
+        .layer-control {
+            margin: 10px 0;
+        }
+
+        .layer-control label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .layer-control input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        .buffer-controls {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .buffer-controls input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+            margin: 5px 0;
+        }
+
+        .btn:hover {
+            background: #042b55;
+        }
+
+        .btn-clear {
+            background: #66060f;
+        }
+
+        .btn-clear:hover {
+            background: #c82333;
+        }
+
+        .results {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .result-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+            font-size: 13px;
+        }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .coordinates {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .ol-popup {
+            position: absolute;
+            background-color: white;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #cccccc;
+            bottom: 12px;
+            left: -50px;
+            width: auto;
+        }
+
+        
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="panel">
+                <h3>🗂️ Layers</h3>
+                <div class="layer-control">
+                    <label>
+                        <input type="checkbox" id="cultural-points" checked>
+                        Cultural points
+                    </label>
+                </div>
+                <div class="layer-control">
+                    <label>
+                        <input type="checkbox" id="cultural-polygons" checked>
+                        Cultural polygons
+                    </label>
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="panel">
+                <h3>🎨 Legend</h3>
+                <div class="legend">
+                    <strong>Cultural Places</strong><br />
+                    <div style="margin-top: 10px;">
+                        <div style="display: flex; align-items: center; margin: 8px 0;">
+                            <div style="width: 15px; height: 15px; background-color: #c29d49; margin-right: 8px;"></div>
+                            Museum
+                        </div>
+                        <div style="display: flex; align-items: center; margin: 8px 0;">
+                            <div style="width: 15px; height: 15px; background-color: #a23e48; margin-right: 8px;"></div>
+                            Church
+                        </div>
+                        <div style="display: flex; align-items: center; margin: 8px 0;">
+                            <div style="width: 15px; height: 15px; background-color: #4b3f72; margin-right: 8px;"></div>
+                            Theater
+                        </div>
+
+                        <div style="display: flex; align-items: center; margin: 8px 0;">
+                            <div
+                                style="width: 12px; height: 12px; background-color: #d1ce3b; border-radius: 50%; margin-right: 8px;">
+                            </div> Gallery
+                        </div>
+                        <div style="display: flex; align-items: center; margin: 8px 0;">
+                            <div
+                                style="width: 12px; height: 12px; background-color: #ba7696; border-radius: 50%; margin-right: 8px;">
+                            </div> Art Centre
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Buffer -->
+            <div class="panel">
+                <h3>📍 Buffer Analisis</h3>
+                <div id="connection-status" class="status info">
+                    🔄 Loading...
+                </div>
+
+                <div class="buffer-controls">
+                    <label for="buffer-distance">Buffer distance (meters):</label>
+                    <input type="number" id="buffer-distance" value="400" min="50" max="1000" step="50">
+
+                    <button class="btn btn-clear" onclick="clearBuffer()">
+                        🗑️ Clear buffer
+                    </button>
+                </div>
+
+                <div id="analysis-results"></div>
+            </div>
+        </div>
+
+        <!-- Map -->
+        <div class="map-container">
+            <div id="map"></div>
+
+            <!-- Popup -->
+            <div id="popup" class="ol-popup">
+                <div id="popup-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OpenLayers JS -->
+    <script src="https://cdn.jsdelivr.net/npm/ol@v8.2.0/dist/ol.js"></script>
+
+    <script>
+        //const geoserverUrl = 'http://localhost:8080/geoserver/vienna_project/wms';
+
+        let map;
+        let bufferLayer;
+        let clickedPoint;
+        let overlay;
+        let culturalPointsLayer;
+        let culturalPolygonsLayer;
+
+        const culturalColors = {
+            'museum': '#c29d49',
+            'place_of_worship': '#a23e48',
+            'theatre': '#4b3f72',
+            'gallery': '#d1ce3b',
+            'arts_centre': '#ba7696'
+        };
+
+        function pointStyleFunction(feature) {
+            const type = feature.get('cultural');
+            const color = culturalColors[type] || 'gray';
+
+            return new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 6,
+                    fill: new ol.style.Fill({ color: color }),
+                    stroke: new ol.style.Stroke({ color: 'white', width: 1 })
+                })
+            });
+        }
+
+        function polygonStyleFunction(feature) {
+            const type = feature.get('cultural');
+            const color = culturalColors[type] || '#cccccc';
+
+            return new ol.style.Style({
+                fill: new ol.style.Fill({ color: ol.color.asArray(color).slice(0, 3).concat(0.4) }), // semitransparente
+                stroke: new ol.style.Stroke({ color: color, width: 2 })
+            });
+        }
+
+
+        function initMap() {
+            console.log('loading map...');
+
+            try {
+                const baseLayer = new ol.layer.Tile({
+                    source: new ol.source.XYZ({
+                        url: 'https://{a-c}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+                        attributions: '&copy; <a href="https://carto.com/">CARTO</a>',
+                        maxZoom: 20
+                    }),
+                    title: 'Base Map'
+                });
+
+                bufferLayer = new ol.layer.Vector({
+                    source: new ol.source.Vector(),
+                    style: new ol.style.Style({
+                        fill: new ol.style.Fill({
+                            color: 'rgba(0, 123, 255, 0.1)'
+                        }),
+                        stroke: new ol.style.Stroke({
+                            color: '#007bff',
+                            width: 2,
+                            lineDash: [5, 5]
+                        })
+                    }),
+                    title: 'Buffer Layer'
+                });
+
+                culturalPointsLayer = new ol.layer.Vector({
+                    source: new ol.source.Vector({
+                        url: 'data/cultural_point.geojson',
+                        format: new ol.format.GeoJSON()
+                    }),
+                    style: pointStyleFunction,
+                    visible: true,
+                    visible: true,
+                    title: 'Cultural Points',
+                    opacity: 0.9
+                });
+
+                culturalPolygonsLayer = new ol.layer.Vector({
+                    source: new ol.source.Vector({
+                        url: 'data/cultural_polygons.geojson',
+                        format: new ol.format.GeoJSON()
+                    }),
+                    style: polygonStyleFunction,
+                    visible: true,
+                    title: 'Cultural Polygons',
+                    opacity: 0.8
+                });
+
+                const popupElement = document.getElementById('popup');
+                overlay = new ol.Overlay({
+                    element: popupElement,
+                    positioning: 'bottom-center',
+                    stopEvent: false,
+                    offset: [0, -10]
+                });
+
+                // Create map
+                map = new ol.Map({
+                    target: 'map',
+                    layers: [
+                        baseLayer,
+                        culturalPolygonsLayer,
+                        culturalPointsLayer,
+                        bufferLayer
+                    ],
+                    overlays: [overlay],
+                    view: new ol.View({
+                        center: ol.proj.fromLonLat([16.370668, 48.208169]), // Vienna
+                        zoom: 15
+                    })
+                });
+                function showPopup(coordinate, content) {
+                    document.getElementById('popup-content').innerHTML = content;
+                    overlay.setPosition(coordinate);
+                }
+
+                map.on('pointermove', function (evt) {
+                    if (evt.dragging) return; 
+
+                    const feature = map.forEachFeatureAtPixel(evt.pixel, function (feature) {
+                        return feature;
+                    });
+
+                    if (feature) {
+                        const name = feature.get('name') || 'No name';
+                        const coordinate = evt.coordinate;
+
+                        showPopup(coordinate, `<strong>${name}</strong>`);
+                    } else {
+                        overlay.setPosition(undefined);
+                    }
+                });
+
+
+                console.log('Map created successfully.');
+                updateStatus('✅ Map loaded with GeoJSON layers.', 'success');
+
+                setupEventListeners();
+
+
+            } catch (error) {
+                console.error('Failed to initialize map:', error);
+                updateStatus('❌ Error loading map: ' + error.message, 'error');
+            }
+        }
+
+        function checkLayerStatus() {
+            let layersLoaded = 0;
+            let totalLayers = 2;
+
+            culturalPointsLayer.getSource().on('tileloaderror', function (event) {
+                console.error('Error loading cultural point:', event);
+                updateStatus('⚠️ Error loading cultural points', 'error');
+            });
+
+            culturalPolygonsLayer.getSource().on('tileloaderror', function (event) {
+                console.error('Error loading cultural polygons:', event);
+                updateStatus('⚠️ Error loading cultural polygons.', 'error');
+            });
+
+            culturalPointsLayer.getSource().on('tileloadend', function () {
+                layersLoaded++;
+                if (layersLoaded === totalLayers) {
+                    updateStatus('✅ Click the map for analysis.', 'success');
+                }
+            });
+
+            culturalPolygonsLayer.getSource().on('tileloadend', function () {
+                layersLoaded++;
+                if (layersLoaded === totalLayers) {
+                    updateStatus('✅ Click the map for analysis.', 'success');
+                }
+            });
+
+            setTimeout(() => {
+                if (layersLoaded < totalLayers) {
+                    updateStatus('⚠️ Some WMS layers have problems . base map ok.', 'info');
+                }
+            }, 5000);
+        }
+
+        function setupEventListeners() {
+            map.on('singleclick', function (evt) {
+                clickedPoint = evt.coordinate;
+                const lonLat = ol.proj.toLonLat(clickedPoint);
+
+                updateStatus('🔄 Analyzing...', 'info');
+                createBuffer(clickedPoint);
+                analyzeBuffer(lonLat);
+            });
+
+            document.getElementById('cultural-points').addEventListener('change', function () {
+                culturalPointsLayer.setVisible(this.checked);
+            });
+
+            document.getElementById('cultural-polygons').addEventListener('change', function () {
+                culturalPolygonsLayer.setVisible(this.checked);
+            });
+
+            document.getElementById('buffer-distance').addEventListener('change', function () {
+                if (clickedPoint) {
+                    createBuffer(clickedPoint);
+                    const lonLat = ol.proj.toLonLat(clickedPoint);
+                    analyzeBuffer(lonLat);
+                }
+            });
+
+
+        }
+
+        function createBuffer(center) {
+            const distance = parseInt(document.getElementById('buffer-distance').value);
+            const bufferSource = bufferLayer.getSource();
+
+            bufferSource.clear();
+
+            const circle = new ol.geom.Circle(center, distance);
+            const circleFeature = new ol.Feature(circle);
+
+            const pointFeature = new ol.Feature({
+                geometry: new ol.geom.Point(center)
+            });
+
+            pointFeature.setStyle(new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 8,
+                    fill: new ol.style.Fill({
+                        color: '#ff4444'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: '#ffffff',
+                        width: 2
+                    })
+                })
+            }));
+
+            bufferSource.addFeatures([circleFeature, pointFeature]);
+
+
+        }
+
+
+        function analyzeBuffer(lonLat) {
+            currentBufferCenter = lonLat; 
+            const distance = parseInt(document.getElementById('buffer-distance').value);
+
+            const center = ol.proj.fromLonLat(lonLat);
+
+            const buffer = ol.geom.Polygon
+                .fromCircle(new ol.geom.Circle(center, distance));
+
+            const foundFeatures = [];
+
+            [culturalPointsLayer, culturalPolygonsLayer].forEach(layer => {
+                const source = layer.getSource();
+                source.forEachFeature(feature => {
+                    if (buffer.intersectsExtent(feature.getGeometry().getExtent())) {
+                        if (buffer.intersectsCoordinate(feature.getGeometry().getClosestPoint(center))) {
+                            foundFeatures.push(feature);
+                        }
+                    }
+                });
+            });
+
+            displayRealResults(foundFeatures, distance);
+        }
+
+
+        function displayRealResults(features, distance) {
+            const resultsDiv = document.getElementById('analysis-results');
+
+            let resultsHTML = `
+        <div class="status success">
+            📊 Analysis completed: ${features.length} places found in ${distance}m
+        </div>
+        <div class="results">
+    `;
+
+            if (features.length === 0) {
+                resultsHTML += `
+            <div class="result-item" style="text-align: center; color: #666;">
+                No cultural places in this area
+            </div>
+        `;
+            } else {
+                const wgs84 = 'EPSG:4326';
+
+                features.forEach(f => {
+                    const name = f.get('name') || 'Unknown';
+                    const type = f.get('cultural') || 'N/A';
+
+                    const centerCoord = ol.proj.fromLonLat(currentBufferCenter); 
+
+                    const closest = f.getGeometry().getClosestPoint(centerCoord);
+
+                    const closestLonLat = ol.proj.toLonLat(closest);
+                    const centerLonLat = currentBufferCenter; 
+
+                    const distanceToFeature = ol.sphere.getDistance(centerLonLat, closestLonLat);
+
+                    resultsHTML += `
+            <div class="result-item">
+                <strong>📍 ${name}</strong><br>
+                Tipo: ${type}<br>
+                <div class="coordinates">
+                    Distance: ${Math.round(distanceToFeature)} m
+                </div>
+            </div>
+        `;
+                });
+            }
+
+            resultsHTML += '</div>';
+            resultsDiv.innerHTML = resultsHTML;
+        }
+
+        // Clear buffer
+        function clearBuffer() {
+            if (bufferLayer) {
+                bufferLayer.getSource().clear();
+            }
+            overlay.setPosition(undefined);
+            document.getElementById('analysis-results').innerHTML = '';
+            clickedPoint = null;
+            updateStatus('✅ Buffer cleared. Click the map to start analysis.', 'info');
+        }
+
+        
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('connection-status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.innerHTML = message;
+        }
+
+        window.addEventListener('load', function () {
+            console.log('Page loaded');
+            initMap();
+        });
+
+        if (typeof ol === 'undefined') {
+            console.error('OpenLayers no loaded correctly');
+            document.getElementById('connection-status').innerHTML = '❌ Error: OpenLayers no loaded';
+        } else {
+            console.log('OpenLayers loaded, versión:', ol.VERSION || 'unknown');
+        }
+    </script>
+</body>
+
+</html>
