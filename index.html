@@ -177,8 +177,6 @@
             left: -50px;
             width: auto;
         }
-
-        
     </style>
 </head>
 
@@ -390,14 +388,19 @@
                 }
 
                 map.on('pointermove', function (evt) {
-                    if (evt.dragging) return; 
+                    if (evt.dragging) return;
 
-                    const feature = map.forEachFeatureAtPixel(evt.pixel, function (feature) {
-                        return feature;
+                    let targetFeature = null;
+
+                    map.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
+                        if (layer !== bufferLayer && !targetFeature) {
+                            targetFeature = feature;
+                            return true; 
+                        }
                     });
 
-                    if (feature) {
-                        const name = feature.get('name') || '';
+                    if (targetFeature) {
+                        const name = targetFeature.get('name') || 'no name';
                         const coordinate = evt.coordinate;
 
                         showPopup(coordinate, `<strong>${name}</strong>`);
@@ -405,6 +408,7 @@
                         overlay.setPosition(undefined);
                     }
                 });
+
 
 
                 console.log('Map created successfully.');
@@ -516,7 +520,7 @@
 
 
         function analyzeBuffer(lonLat) {
-            currentBufferCenter = lonLat; 
+            currentBufferCenter = lonLat;
             const distance = parseInt(document.getElementById('buffer-distance').value);
 
             const center = ol.proj.fromLonLat(lonLat);
@@ -564,12 +568,12 @@
                     const name = f.get('name') || 'Unknown';
                     const type = f.get('cultural') || 'N/A';
 
-                    const centerCoord = ol.proj.fromLonLat(currentBufferCenter); 
+                    const centerCoord = ol.proj.fromLonLat(currentBufferCenter);
 
                     const closest = f.getGeometry().getClosestPoint(centerCoord);
 
                     const closestLonLat = ol.proj.toLonLat(closest);
-                    const centerLonLat = currentBufferCenter; 
+                    const centerLonLat = currentBufferCenter;
 
                     const distanceToFeature = ol.sphere.getDistance(centerLonLat, closestLonLat);
 
@@ -600,7 +604,7 @@
             updateStatus('✅ Buffer cleared. Click the map to start analysis.', 'info');
         }
 
-        
+
         function updateStatus(message, type) {
             const statusDiv = document.getElementById('connection-status');
             statusDiv.className = `status ${type}`;
